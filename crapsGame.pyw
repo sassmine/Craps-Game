@@ -1,14 +1,20 @@
 #!/usr/bin/env python
-
+from sys import path
 from die import * 
 import sys
 import crapsResources_rc
 from time import sleep
-from PyQt5.QtCore import pyqtSlot
+from os import path
+from PyQt5.QtCore import pyqtSlot, QCoreApplication, QSettings
 from PyQt5 import QtGui, uic
-from PyQt5.QtWidgets import  QMainWindow, QApplication
+from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog
 
-class Craps(QMainWindow) :
+startingBankDefault = 100
+maximumBetDefault = 100
+minimumBetDefault = 10
+logFilenameDefault = 'craps.log'
+
+class Dice(QMainWindow) :
     """A game of Craps."""
     die1 = die2 = None
 
@@ -36,6 +42,7 @@ class Craps(QMainWindow) :
 
         self.results = 'Welcome to Craps'
         self.rollButton.clicked.connect(self.rollButtonClickedHandler)
+        self.preferencesButton.clicked.connect(self.preferencesSelectButtonClickedHandler)
 
     def __str__( self ):
         """String representation for Dice.
@@ -84,9 +91,95 @@ class Craps(QMainWindow) :
             self.firstRoll = True
         self.updateUI()
 
+    def restoreSettings(self):
+        # Restore settings values, write defaults to any that don't already exist
+        if self.appSettings.contains('logFile'):
+            self.logFilename = self.appSettings.value('logFile', type=str)
+        else:
+            self.logFilename = 'pythonGraderLog.txt'
+            self.appSettings.setValue('logFile', self.logFilename)
+        if self.appSettings.contains('pickleFilename'):
+            self.pickleFilename = self.appSettings.value('pickleFilename', type=str)
+        else:
+            self.pickleFilename = ".crapsSavedObjects.pl"
+            self.appSettings.setValue('pickleFilename', self.pickleFilename)
+    def preferencesSelectButtonClickedHandler(self):
+        print("Setting preferences")
+        preferencesDialog = PreferencesDialog()
+        preferencesDialog.show()
+        preferencesDialog.exec_()
+       # self.restoreSettings()
+        self.updateUI()
+
+class PreferencesDialog(QDialog):
+    def __init__(self, parent = Dice):
+        super(PreferencesDialog, self).__init__()
+
+        uic.loadUi('preferencesDialog.ui', self)
+
+        self.appSettings = QSettings()
+        if self.appSettings.contains('startingBank'):
+            self.startingBank = self.appSettings.value('startingBank', type=int)
+        else:
+            self.startingBank = startingBankDefault
+            self.appSettings.setValue('startingBank',self.startingBank)
+
+        if self.appSettings.contains('maximumBet'):
+            self.maximumBet = self.appSettings.value('maximumBet', type=int)
+        else:
+            self.maximumBet = maximumBetDefault
+            self.appSettings.setValue('maximumBet', self.maximumBet)
+
+        if self.appSettings.contains('minimumBet'):
+            self.minimumBet = self.appSettings.value('minimumBet', type=int)
+        else:
+            self.minimumBet = minimumBetDefault
+            self.appSettings.setValue('minimumBet', self.minimumBet)
+
+        # if self.appSettings.contains('createLogFile'):
+        #     self.createLogFile = self.appSettings.value('createLogFile', type = bool)
+        # else:
+        #     self.createLogFile = logFilenameDefault
+        #     self.appSettings.setValue('createLogFile', self.createLogFile)
+
+        self.buttonBox.rejected.connect(self.cancelClickedHandler)
+        self.buttonBox.accepted.connect(self.okayClickedHandler)
+        self.startingBankValue.editingFinished.connect(self.startingBankValueChanged)
+        self.maximumBetValue.editingFinished.connect(self.maximumBetValueChanged)
+        self.minimumBetValue.editingFinished.connect(self.minimumBetValueChanged)
+       # self.createLogFileCheckBox.stateChanged.connect(self.createLogFileChanged)
+        self.updateUI()
+
+    def updateUI(self):
+        self.startingBankValue.setText(str(self.startingBank))
+        self.maximumBetValue.setText(str(self.maximumBet))
+        self.minimumBetValue.setText(str(self.minimumBet))
+
+    def startingBankValueChanged(self):
+        self.startingBank = int(self.startingBankValue.text())
+
+    def maximumBetValueChanged(self):
+        self.maximumBet = int(self.maximumBetValue.text())
+    def minimumBetValueChanged(self):
+        self.minimumBet = int(self.minimumBetValue.text())
+
+    # @pyqtSlot()
+    def okayClickedHandler(self):
+        # print("Clicked okay button")
+        basePath = path.dirname(path.realpath(__file__))
+
+        self.close()
+
+        # @pyqtSlot()
+    def cancelClickedHandler(self):
+        self.close()
 if __name__ == "__main__":
+    QCoreApplication.setOrganizationName("Jazmine's Stuff");
+    QCoreApplication.setOrganizationName("jazminesstuff.com");
+    QCoreApplication.setApplicationName("Craps");
+    appSettings = QSettings()
     app = QApplication(sys.argv)
-    diceApp = Craps()
+    diceApp = Dice()
     diceApp.updateUI()
     diceApp.show()
     sys.exit(app.exec_())
