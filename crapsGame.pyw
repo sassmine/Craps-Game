@@ -37,8 +37,7 @@ class Dice(QMainWindow) :
         self.restoreSettings()
 
         if path.exists(self.pickleFilename):
-            self.die1, self.die2, self.firstRoll, self.results, self.playerLost, self.firstRollValue,
-            self.buttonText, self.wins, self.losses, self.currentBet, self.currentBank = self.restoreGame()
+            self.die1, self.die2, self.firstRoll, self.results, self.playerLost, self.firstRollValue, self.buttonText, self.wins, self.losses, self.currentBet, self.bank, self.point = self.restoreGame()
         else:
             self.restartGame()
         self.rollButton.clicked.connect(self.rollButtonClickedHandler)
@@ -53,12 +52,15 @@ class Dice(QMainWindow) :
         self.results = 'Welcome to Craps'
         self.rollButton.clicked.connect(self.rollButtonClickedHandler)
         self.preferencesButton.clicked.connect(self.preferencesButtonClickedHandler)
+        self.restartButton.clicked.connect(self.restartButtonClickedHandler)
+        self.bailButton.clicked.connect(self.bailButtonClickedHandler)
+        self.updateUI()
 
     def __str__( self ):
         """String representation for Dice.
         """
 
-        return "Die1: %s\nDie2: %s" % ( str(self.die1),  str(self.die2) )
+        return "Die1: %s\nDie2: %s" % (str(self.die1),  str(self.die2))
 
     def updateUI ( self ):
         print("Die1: %i, Die2: %i" % (self.die1.getValue(),  self.die2.getValue()))
@@ -68,7 +70,7 @@ class Dice(QMainWindow) :
         self.resultsLabel.setText(self.results)
         self.winsLabel.setText(str(self.wins))
         self.lossesLabel.setText(str(self.losses))
-        self.bankValue.setText(str(self.currentBank))
+        self.bankValue.setText(str(self.bank))
 
     def restartGame(self):
         self.die1 = Die()
@@ -83,11 +85,12 @@ class Dice(QMainWindow) :
         self.wins = 0
         self.losses = 0
         self.currentBet = 0
-        self.currentBank = self.startingBank
+        self.bank = self.startingBank
+        self.point = 0
 
     def saveGame(self):
-        saveItems = (self.dial, self.die2, self.firstRoll, self.results, self.playerLost, self.firstRollValue,
-            self.buttonText, self.wins, self.losses, self.currentBet, self.currentBank)
+        saveItems = (self.die1, self.die2, self.firstRoll, self.results, self.playerLost, self.firstRollValue,
+            self.buttonText, self.wins, self.losses, self.currentBet, self.bank, self.point)
         if self.appSettings.contains('pickleFilename'):
             with open(path.join(path.dirname(path.realpath(__file__)), self.appSettings.value('pickleFilename',
                 type=str)), 'wb') as pickleFile:
@@ -97,13 +100,22 @@ class Dice(QMainWindow) :
 
 		# Player asked for another roll of the dice.
 
-        def restoreGame(self):
-            if self.appSettings.contains('pickleFilename'):
-                self.appSettings.value('pickleFilename', type=str)
-                with open(path.join(path.dirname(path.realpath(__file__)), self.appSettings.value('pickleFilename', type=str)), 'rb') as pickleFile:
-                    return load(pickleFile)
-            else:
-                self.logger.critical("No pickle Filename")
+    def restoreGame(self):
+        if self.appSettings.contains('pickleFilename'):
+            self.appSettings.value('pickleFilename', type=str)
+            with open(path.join(path.dirname(path.realpath(__file__)), self.appSettings.value('pickleFilename', type=str)), 'rb') as pickleFile:
+                return load(pickleFile)
+        else:
+            self.logger.critical("No pickle Filename")
+
+    def restoreGame(self):
+        if self.appSettings.contains('pickleFilename'):
+            self.appSettings.value('pickleFileName', type = str)
+            with open(path.join(path.dirname(path.realpath(__file__)), self.appSettings.value('pickleFileName', type = str)), 'rb') as pickleFile:
+                return load(pickleFile)
+        else:
+            self.logger.critical("No pickle Filename")
+
 
     def rollButtonClickedHandler ( self ):
         self.currentBet = self.bidSpinBox.value()
@@ -116,13 +128,13 @@ class Dice(QMainWindow) :
                 self.wins += 1
                 self.bank += self.payouts[totalRoll] * self.currentBet
             elif totalRoll in [2, 3, 12]:
-                self.results = "Shooter Loses, Don't Pass Bets Win!"
                 self.losses += 1
                 self.bank -= self.payouts[totalRoll] * self.currentBet
             else:
                 self.point = totalRoll
                 self.results = 'Point = {0}'.format(self.point)
                 self.firstRoll = False
+                self.bailButton.setEnabled(True)
         else:
             if totalRoll == self.point:
                 self.results = "Shooter Wins, Pass Bets Win!"
@@ -133,6 +145,35 @@ class Dice(QMainWindow) :
                 self.losses += 1
                 self.bank -= self.payouts[totalRoll] * self.currentBet
             self.firstRoll = True
+            self.bailButton.setEnabled(False)
+        self.updateUI()
+
+    def preferencesSelectButtonClickedHandler(self):
+        print("Setting preferences")
+        preferencesDialog = PreferencesDialog()
+        preferencesDialog.show()
+        preferencesDialog.exec_()
+        self.restoreSettings()
+        self.updateUI()
+
+    def restartButtonClickedHandler(self):
+        self.restartGame()
+        self.updateUI()
+
+    @pyqtSlot() #Player asked for another roll of the dice.
+    def bailButtonClickedHandler (self):
+        self.losses += 1
+        self.bank -= self.currentBet
+        self.firstRoll = True
+        self.results = "Bailed!"
+        self.bailButton.setEnabled(False)
+        self.buttonText = "Roll"
+        self.updateUI()
+
+
+    def restartButtonClickedHandler(self):
+        self.restartGame()
+        self.saveGame()
         self.updateUI()
 
     def restoreSettings(self):
@@ -173,6 +214,7 @@ class Dice(QMainWindow) :
             self.pickleFilename = ".crapsSavedObjects.pl"
             self.appSettings.setValue('pickleFilename', self.pickleFilename)
 
+    # @pyqtSlot()
     def preferencesButtonClickedHandler(self):
         print("Setting preferences")
         preferencesDialog = PreferencesDialog()
@@ -180,6 +222,39 @@ class Dice(QMainWindow) :
         preferencesDialog.exec_()
         self.restoreSettings()
         self.updateUI()
+
+    def restoreSettings(self):
+        if self.appSettings.contains('startingBank'):
+            self.startingBank = self.appSettings.value('startingBank', type=int)
+        else:
+            self.startingBank = startingBankDefault
+            self.appSettings.setValue('startingBank', self.startingBank)
+        if self.appSettings.contains('maximumBet'):
+            self.maximumBet = self.appSettings.value('maximumBet', type =int)
+        else:
+            self.minimumBet = minimumBetDefault
+            self.appSettings.setValue('minimumBet', self.minimumBet)
+        if self.appSettings.contains('createLogFile'):
+            self.createLogFile = appSettings.value('createLogFile', type=bool)
+        else:
+            self.createLogFile = logFileNameDefault
+            self.appSettings.setValue('createLogFile', self.createLogFile)
+    #set a break point before restore settings and look at all variables and they should have
+
+    @pyqtSlot()   #Player asked to quit the game.
+    def closeEvent(self, event):
+        self.logger.debug("Closing app event")
+        if self.quitCounter == 0:
+            self.quitCounter += 1
+            quitMessage = "Are you sure you want to quit?"
+            reply = QMessageBox.question(self, 'Message', quitMessage, QMessageBox.Yes, QMessageBox.No)
+
+            if reply ==QMessageBox.Yes:
+                self.saveGame()
+                event.accept()
+            else:
+                event.ignore()
+            return super().closeEvent(event)
 
 class PreferencesDialog(QDialog):
     def __init__(self, parent = Dice):
@@ -206,11 +281,11 @@ class PreferencesDialog(QDialog):
             self.minimumBet = minimumBetDefault
             self.appSettings.setValue('minimumBet', self.minimumBet)
 
-        # if self.appSettings.contains('createLogFile'):
-        #     self.createLogFile = self.appSettings.value('createLogFile', type = bool)
-        # else:
-        #     self.createLogFile = logFilenameDefault
-        #     self.appSettings.setValue('createLogFile', self.createLogFile)
+        if self.appSettings.contains('createLogFile'):
+            self.createLogFile = self.appSettings.value('createLogFile', type = bool)
+        else:
+            self.createLogFile = logFilenameDefault
+            self.appSettings.setValue('createLogFile', self.createLogFile)
 
         self.buttonBox.rejected.connect(self.cancelClickedHandler)
         self.buttonBox.accepted.connect(self.okayClickedHandler)
@@ -262,5 +337,3 @@ if __name__ == "__main__":
     diceApp.updateUI()
     diceApp.show()
     sys.exit(app.exec_())
-
-

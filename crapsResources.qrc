@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file alias="gearIcon">images/gear.png</file>
     <file alias="1">images/1Face.png</file>
     <file alias="2">images/2Face.png</file>
     <file alias="3">images/3Face.png</file>
