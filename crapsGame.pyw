@@ -17,11 +17,11 @@ minimumBetDefault = 10
 logFilenameDefault = 'craps.log'
 pickleFilenameDefault = ".crapsSavedObjects.pl"
 
-class Dice(QMainWindow) :
+class Dice(QMainWindow):
     """A game of Craps."""
     die1 = die2 = None
 
-    def __init__( self, parent=None ):
+    def __init__(self, parent=None):
         """Build a game with two dice."""
 
         super().__init__(parent)
@@ -43,8 +43,8 @@ class Dice(QMainWindow) :
         self.rollButton.clicked.connect(self.rollButtonClickedHandler)
         self.preferencesButton.clicked.connect(self.preferencesButtonClickedHandler)
 
-        self.bidSpinBox.setRange ( 10, 100 )
-        self.bidSpinBox.setSingleStep ( 5 )
+        self.bidSpinBox.setRange(10, 100)
+        self.bidSpinBox.setSingleStep(5)
 
              #          0  1  2  3  4    5    6    7    8    9    10   11   12
         self.payouts = [0, 0, 0, 0, 2.0, 1.5, 1.2, 1.0, 1.2, 1.5, 2.0, 1.0, 0]
@@ -110,8 +110,8 @@ class Dice(QMainWindow) :
 
     def restoreGame(self):
         if self.appSettings.contains('pickleFilename'):
-            self.appSettings.value('pickleFileName', type = str)
-            with open(path.join(path.dirname(path.realpath(__file__)), self.appSettings.value('pickleFileName', type = str)), 'rb') as pickleFile:
+            pickleFilename = self.appSettings.value('pickleFileName', type = str)
+            with open(path.join(path.dirname(path.realpath(__file__)), pickleFilename), 'rb') as pickleFile:
                 return load(pickleFile)
         else:
             self.logger.critical("No pickle Filename")
@@ -223,22 +223,22 @@ class Dice(QMainWindow) :
         self.restoreSettings()
         self.updateUI()
 
-    def restoreSettings(self):
-        if self.appSettings.contains('startingBank'):
-            self.startingBank = self.appSettings.value('startingBank', type=int)
-        else:
-            self.startingBank = startingBankDefault
-            self.appSettings.setValue('startingBank', self.startingBank)
-        if self.appSettings.contains('maximumBet'):
-            self.maximumBet = self.appSettings.value('maximumBet', type =int)
-        else:
-            self.minimumBet = minimumBetDefault
-            self.appSettings.setValue('minimumBet', self.minimumBet)
-        if self.appSettings.contains('createLogFile'):
-            self.createLogFile = appSettings.value('createLogFile', type=bool)
-        else:
-            self.createLogFile = logFileNameDefault
-            self.appSettings.setValue('createLogFile', self.createLogFile)
+    # def restoreSettings(self):
+    #     if self.appSettings.contains('startingBank'):
+    #         self.startingBank = self.appSettings.value('startingBank', type=int)
+    #     else:
+    #         self.startingBank = startingBankDefault
+    #         self.appSettings.setValue('startingBank', self.startingBank)
+    #     if self.appSettings.contains('maximumBet'):
+    #         self.maximumBet = self.appSettings.value('maximumBet', type =int)
+    #     else:
+    #         self.minimumBet = minimumBetDefault
+    #         self.appSettings.setValue('minimumBet', self.minimumBet)
+    #     if self.appSettings.contains('createLogFile'):
+    #         self.createLogFile = appSettings.value('createLogFile', type=bool)
+    #     else:
+    #         self.createLogFile = True
+    #         self.appSettings.setValue('createLogFile', self.createLogFile)
     #set a break point before restore settings and look at all variables and they should have
 
     @pyqtSlot()   #Player asked to quit the game.
